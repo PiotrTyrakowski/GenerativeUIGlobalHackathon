@@ -1,8 +1,7 @@
 {
   "mcpServers": {
     "canvas": {
-      "command": "npx",
-      "args": ["tsx", "apps/mcp/src/index.ts"]
+      "url": "http://localhost:3011/sse"
     }
   }
 }
