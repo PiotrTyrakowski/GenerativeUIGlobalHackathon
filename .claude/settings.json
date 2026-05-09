@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "canvas": {
+      "command": "npx",
+      "args": ["tsx", "apps/mcp/src/index.ts"]
+    }
+  }
+}

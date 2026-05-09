@@ -1,0 +1,6 @@
+@import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+}

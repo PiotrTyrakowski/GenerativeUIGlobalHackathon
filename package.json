@@ -1,0 +1,14 @@
+{
+  "name": "infinite-canvas-claude",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "npm run dev:web",
+    "dev:web": "npm run dev -w web",
+    "dev:agent": "npm run dev -w agent",
+    "dev:full": "concurrently -k -n web,agent -c blue,green \"npm run dev -w web\" \"npm run dev -w agent\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
