@@ -162,6 +162,7 @@ function CanvasInner({
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const moveTool = useCallTool("move_node");
+  const { sendFollowUpMessage } = useWidget<CanvasWidgetProps>();
 
   const nodeTypes = useMemo(
     () => ({ generic: BaseNode, note: BaseNode, task: BaseNode }),
@@ -181,8 +182,12 @@ function CanvasInner({
   const onNodeDragStop = useCallback(
     (_: React.MouseEvent, node: Node) => {
       moveTool.callTool({ id: node.id, position: node.position });
+      const label = (node.data as BaseNodeData)?.label || node.id;
+      sendFollowUpMessage(
+        `User moved "${label}" to position (${Math.round(node.position.x)}, ${Math.round(node.position.y)}). Acknowledge briefly.`,
+      );
     },
-    [moveTool],
+    [moveTool, sendFollowUpMessage],
   );
 
   return (
