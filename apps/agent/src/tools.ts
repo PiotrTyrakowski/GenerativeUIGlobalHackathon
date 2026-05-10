@@ -7,6 +7,11 @@ export interface CanvasNode {
   data: {
     label: string;
     content?: string;
+    status?: string;
+    metric?: string;
+    source?: string;
+    badges?: string[];
+    actions?: string[];
     [key: string]: unknown;
   };
   style?: Record<string, unknown>;
@@ -49,9 +54,21 @@ export const canvasTools = [
         },
         type: {
           type: "string",
-          enum: ["generic", "note", "task"],
+          enum: [
+            "generic",
+            "note",
+            "task",
+            "wiki",
+            "brief",
+            "ingest",
+            "engagement",
+            "hypothesis",
+            "prospect",
+            "campaign",
+            "retro",
+          ],
           description:
-            "'generic' for general content, 'note' for text notes, 'task' for actionable items",
+            "Company Brain component type or generic canvas node type",
         },
         style: {
           type: "object",

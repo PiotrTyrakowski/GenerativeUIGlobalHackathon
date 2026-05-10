@@ -1,7 +1,0 @@
-{
-  "mcpServers": {
-    "canvas": {
-      "url": "http://localhost:3011/sse"
-    }
-  }
-}

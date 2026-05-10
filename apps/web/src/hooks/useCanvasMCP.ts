@@ -9,6 +9,12 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 
+type CompanyBrainMessage = {
+  message: string;
+  nodeId: string;
+  node: string;
+};
+
 export function useCanvasMCP(sseUrl: string) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -16,6 +22,8 @@ export function useCanvasMCP(sseUrl: string) {
   const { fitView } = useReactFlow();
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
+  const edgesRef = useRef(edges);
+  edgesRef.current = edges;
 
   useEffect(() => {
     const es = new EventSource(sseUrl);
@@ -81,5 +89,83 @@ export function useCanvasMCP(sseUrl: string) {
     return () => es.close();
   }, [sseUrl, setNodes, setEdges, fitView]);
 
-  return { nodes, edges, onNodesChange, onEdgesChange, connected };
+  const persistCanvasState = useCallback(
+    async (nextNodes: Node[], nextEdges: Edge[]) => {
+      setNodes(nextNodes);
+      setEdges(nextEdges);
+
+      const stateUrl = sseUrl.replace(/\/events$/, "/state");
+      try {
+        await fetch(stateUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nodes: nextNodes.map((n) => ({
+              id: n.id,
+              type: n.type,
+              position: n.position,
+              data: n.data,
+              style: n.style,
+            })),
+            edges: nextEdges.map((e) => ({
+              id: e.id,
+              source: e.source,
+              target: e.target,
+              label: e.label,
+            })),
+          }),
+        });
+      } catch {
+        // The canvas remains interactive even if the local MCP SSE server is down.
+      }
+    },
+    [sseUrl, setNodes],
+  );
+
+  const persistNodeMove = useCallback(
+    async (node: Node) => {
+      const nextNodes = nodesRef.current.map((n) =>
+        n.id === node.id ? { ...n, position: node.position } : n,
+      );
+      await persistCanvasState(nextNodes, edgesRef.current);
+    },
+    [persistCanvasState],
+  );
+
+  const applyComponentMessage = useCallback(
+    async ({ message, nodeId }: CompanyBrainMessage) => {
+      const nextNodes: Node[] = nodesRef.current.map((n) =>
+        n.id === nodeId
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                status: "Message entered",
+                metric: "Local preview",
+                content: `Latest component message: "${message}". In Cursor/Claude MCP, this same field sends the message to chat from this component context.`,
+                badges: Array.from(
+                  new Set([
+                    ...(((n.data as { badges?: string[] }).badges) ?? []),
+                    "component message",
+                  ]),
+                ),
+              },
+            }
+          : n,
+      );
+
+      await persistCanvasState(nextNodes, edgesRef.current);
+    },
+    [persistCanvasState],
+  );
+
+  return {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
+    connected,
+    persistNodeMove,
+    applyComponentMessage,
+  };
 }
