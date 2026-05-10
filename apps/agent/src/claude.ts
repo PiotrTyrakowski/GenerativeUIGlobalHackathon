@@ -21,10 +21,10 @@ Guidelines:
 - Space nodes 250-300px apart for readability. Start near (100, 100) and arrange logically.
 - Use the Company Brain framework: Karpathy Wiki substrate, Knowledge Brief, Ingestion Diff, Engagement Map, Hypothesis Card, Deal Pipeline, Prospect Map, Campaign Builder, Content Queue, and Retro Dashboard.
 - Choose node types from: wiki, brief, ingest, engagement, hypothesis, prospect, campaign, retro, generic, note, task.
-- Mock sample wiki/deal/campaign content when needed, but say it is mocked in your conversational summary.
+- Use the local sample Company Brain files as the client information source when context is needed.
 - Connect related nodes with edges when it makes semantic sense.
 - Always use your tools to modify the canvas. Don't just describe what you'd do.
-- After making changes, give a brief conversational summary of what you did and what is mocked.`;
+- After making changes, give a brief conversational summary of what you did.`;
 }
 
 interface StreamResult {

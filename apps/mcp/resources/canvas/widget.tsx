@@ -4,7 +4,7 @@ import {
   useCallTool,
   type WidgetMetadata,
 } from "mcp-use/react";
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -103,61 +103,12 @@ type BaseNodeData = {
   actions?: string[];
 };
 
-function mockedActionResult(action: string) {
-  const normalized = action.toLowerCase();
-
-  if (normalized.includes("apply")) {
-    return {
-      status: "Mock applied",
-      metric: "Applied",
-      content:
-        "Mock action applied. Wiki learning, affected component state, and downstream canvas refresh are simulated.",
-    };
-  }
-
-  if (normalized.includes("draft") || normalized.includes("generate")) {
-    return {
-      status: "Mock draft ready",
-      metric: "Draft ready",
-      content:
-        "Mock draft generated using founder voice rules and current wiki context. No message was sent.",
-    };
-  }
-
-  if (normalized.includes("create") || normalized.includes("enrich")) {
-    return {
-      status: "Mock enrichment complete",
-      metric: "Mock data",
-      content:
-        "Mock enrichment produced selected targets, signal scores, and suggested campaign angles.",
-    };
-  }
-
-  if (normalized.includes("prep") || normalized.includes("view") || normalized.includes("open")) {
-    return {
-      status: "Mock brief opened",
-      metric: "Opened",
-      content:
-        "Mock detail view created from the relevant wiki pages and source records.",
-    };
-  }
-
-  return {
-    status: "Mock action complete",
-    metric: "Done",
-    content:
-      "Mock interaction completed. This updates local demo state only until the real tool exists.",
-  };
-}
-
 function BaseNode({
   id,
   data,
   type,
-  onAction,
   onSendMessage,
 }: NodeProps<Node<BaseNodeData>> & {
-  onAction?: (payload: { action: string; nodeId: string; node: string }) => void;
   onSendMessage?: (payload: {
     message: string;
     nodeId: string;
@@ -270,30 +221,6 @@ function BaseNode({
               ))}
             </div>
           )}
-          {data.actions && data.actions.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-              {data.actions.map((action) => (
-                <button
-                  key={action}
-                  type="button"
-                  onClick={() =>
-                    onAction?.({ action, nodeId: id, node: data.label })
-                  }
-                  onPointerDown={(event) => event.stopPropagation()}
-                  style={{
-                    background: "#262626",
-                    border: "1px solid #404040",
-                    borderRadius: 6,
-                    color: "#f5f5f5",
-                    fontSize: 10,
-                    padding: "4px 7px",
-                  }}
-                >
-                  {action}
-                </button>
-              ))}
-            </div>
-          )}
           <div
             onPointerDown={(event) => event.stopPropagation()}
             style={{
@@ -375,6 +302,18 @@ function BaseNode({
 // Canvas inner (needs ReactFlowProvider above it)
 // ---------------------------------------------------------------------------
 
+function canvasSyncKey(nodes: Node[], edges: Edge[]) {
+  const n = [...nodes]
+    .map((node) => `${node.id}:${JSON.stringify(node.position)}:${JSON.stringify(node.data)}`)
+    .sort()
+    .join("|");
+  const e = [...edges]
+    .map((edge) => `${edge.id}:${edge.source}->${edge.target}:${edge.label ?? ""}`)
+    .sort()
+    .join(";");
+  return `${n}#${e}`;
+}
+
 function CanvasInner({
   initialNodes,
   initialEdges,
@@ -387,69 +326,15 @@ function CanvasInner({
   const moveTool = useCallTool("move_node");
   const { sendFollowUpMessage, setState } = useWidget<CanvasWidgetProps>();
 
-  const onAction = useCallback(
-    ({
-      action,
-      nodeId,
-      node,
-    }: {
-      action: string;
-      nodeId: string;
-      node: string;
-    }) => {
-      const result = mockedActionResult(action);
-      const sourceNode = nodes.find((n) => n.id === nodeId);
-      const noteId = `mock-${Math.random().toString(16).slice(2, 10)}`;
-      const notePosition = sourceNode
-        ? { x: sourceNode.position.x + 390, y: sourceNode.position.y + 40 }
-        : { x: 120, y: 120 };
-
-      setNodes((currentNodes) => [
-        ...currentNodes.map((currentNode) =>
-          currentNode.id === nodeId
-            ? {
-                ...currentNode,
-                data: {
-                  ...currentNode.data,
-                  status: result.status,
-                  metric: result.metric,
-                  content: result.content,
-                  badges: Array.from(
-                    new Set([
-                      ...(((currentNode.data as BaseNodeData).badges) ?? []),
-                      "mock-clicked",
-                    ]),
-                  ),
-                },
-              }
-            : currentNode,
-        ),
-        {
-          id: noteId,
-          type: "note",
-          position: notePosition,
-          data: {
-            label: `Mock action: ${action}`,
-            metric: "Simulated",
-            status: "No external side effect",
-            content: `Clicked from ${node}. This local widget action did not call Clay, send email, write files, or update a real wiki.`,
-            badges: ["demo only"],
-          },
-        },
-      ]);
-      setEdges((currentEdges) => [
-        ...currentEdges,
-        {
-          id: `edge-${noteId}`,
-          source: nodeId,
-          target: noteId,
-          label: "mock action",
-          animated: true,
-        },
-      ]);
-    },
-    [nodes],
+  const propsSyncKey = useMemo(
+    () => canvasSyncKey(initialNodes, initialEdges),
+    [initialNodes, initialEdges],
   );
+
+  useEffect(() => {
+    setNodes(initialNodes);
+    setEdges(initialEdges);
+  }, [propsSyncKey, initialNodes, initialEdges]);
 
   const onSendMessage = useCallback(
     async ({
@@ -499,7 +384,6 @@ function CanvasInner({
       const ActionNode = (props: NodeProps<Node<BaseNodeData>>) => (
         <BaseNode
           {...props}
-          onAction={onAction}
           onSendMessage={onSendMessage}
         />
       );
@@ -517,7 +401,7 @@ function CanvasInner({
         retro: ActionNode,
       };
     },
-    [onAction, onSendMessage],
+    [onSendMessage],
   );
 
   const onNodesChange: OnNodesChange = useCallback(

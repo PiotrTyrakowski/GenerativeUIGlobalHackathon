@@ -36,7 +36,7 @@ const canvas: { nodes: CanvasNode[]; edges: CanvasEdge[] } = {
 };
 
 const MOCKED_DATA_NOTICE =
-  "Mocked for the hackathon demo: sample wiki pages, Aliaxis/Veoli/Marshall deal state, campaign metrics, and retro learnings. Real parts: MCP tools, server-owned canvas state, SSE web sync, draggable canvas, and Cursor-callable dashboard generation.";
+  "Sample client information is stored as local Company Brain files under company-brain/. Real parts: MCP tools, server-owned canvas state, SSE web sync, draggable canvas, and component-to-chat messaging.";
 
 function createCompanyBrainCanvas(prompt?: string): {
   nodes: CanvasNode[];
@@ -69,8 +69,8 @@ function createCompanyBrainCanvas(prompt?: string): {
         status: "Server-owned state",
         content:
           "Git-backed memory layer. The LLM writes wiki pages from immutable raw sources; components read the compiled state.",
-        source: "CLAUDE.md, index.md, log.md",
-        badges: ["real: state model", "mock: sample pages"],
+        source: "company-brain/CLAUDE.md, company-brain/index.md, company-brain/log.md",
+        badges: ["local files", "sample client data"],
       },
     },
     {
@@ -84,9 +84,8 @@ function createCompanyBrainCanvas(prompt?: string): {
         content: showPolicy
           ? "Standard refund window is 30 days. ACME has a negotiated 45-day exception. Enterprise custom work requires approval."
           : "Ask Cursor a question and this node becomes the structured answer instead of a text wall.",
-        source: "wiki/entities + wiki/decisions",
+        source: "company-brain/wiki/entities + company-brain/wiki/decisions",
         badges: ["search_knowledge"],
-        actions: ["Ask follow-up", "Open source", "Create task"],
       },
     },
     {
@@ -98,11 +97,10 @@ function createCompanyBrainCanvas(prompt?: string): {
         metric: showIngest ? "+5 wiki updates" : "Paste -> diff",
         status: showIngest ? "Ready to apply" : "Idle",
         content: showIngest
-          ? "New raw input would update entity, decision, pipeline, index, and log pages. This demo shows the diff path with mocked files."
+          ? "New raw input would update entity, decision, pipeline, index, and log pages. This demo uses local sample Company Brain files."
           : "Paste transcript, email, policy exception, or research. The server stores raw input and returns a wiki update diff.",
-        source: "raw/transcripts, raw/emails",
+        source: "company-brain/raw/transcripts, company-brain/raw/emails",
         badges: ["ingest_knowledge"],
-        actions: ["Apply diff", "Reject", "Show affected pages"],
       },
     },
     {
@@ -115,9 +113,8 @@ function createCompanyBrainCanvas(prompt?: string): {
         status: "Proposal, 8 days stale",
         content:
           "Szymon champions. Filip owns supply chain. Sylvain confirmed impairment rules: 70% at 24mo, 100% at 12mo.",
-        source: "4 mocked transcripts",
+        source: "company-brain/wiki/entities/aliaxis.md",
         badges: ["stakeholders: 5", "warning"],
-        actions: ["Draft nudge", "Prep next call", "View timeline"],
       },
     },
     {
@@ -130,9 +127,8 @@ function createCompanyBrainCanvas(prompt?: string): {
         status: "High",
         content:
           "NPI is a structural signal problem in industrial manufacturing, not a one-off cleanup project.",
-        source: "wiki/concepts/npi-thesis.md",
+        source: "company-brain/wiki/concepts/npi-thesis.md",
         badges: ["pipes: very high", "cosmetics: low"],
-        actions: ["Find similar companies", "Test via outreach", "Write content"],
       },
     },
     {
@@ -142,12 +138,11 @@ function createCompanyBrainCanvas(prompt?: string): {
       data: {
         label: "Prospect Map",
         metric: showCampaign ? "26 lookalikes" : "8 strong SAP targets",
-        status: "Clay enrichment mocked",
+        status: "Sample enrichment",
         content:
           "Aalberts, Wavin, Genuit, and Polypipe ranked by NPI signal strength, ERP fit, and outreach angle.",
-        source: "mock Clay + wiki research",
+        source: "company-brain/wiki/entities/prospects.md",
         badges: ["SAP", "industrial", "signal score"],
-        actions: ["Create campaign", "Enrich selected"],
       },
     },
     {
@@ -160,9 +155,8 @@ function createCompanyBrainCanvas(prompt?: string): {
         status: "Voice checks active",
         content:
           "Generates hook, pain, and CTA fragments. Flags banned phrases like 'I imagine' against the founder voice page.",
-        source: "wiki/entities/artur-wala.md",
+        source: "company-brain/wiki/entities/artur-wala.md",
         badges: ["voice: 94%", "banned phrases"],
-        actions: ["Approve all", "Regenerate rejects", "Export"],
       },
     },
     {
@@ -175,9 +169,8 @@ function createCompanyBrainCanvas(prompt?: string): {
         status: "Learning loop",
         content:
           "Early Warning angle wins. Pipes outperform cosmetics. Apply updates writes back to wiki and re-sorts the next campaign.",
-        source: "mock campaign results",
+        source: "company-brain/wiki/pipeline/campaign-state.md",
         badges: ["3 meetings", "1 proposal"],
-        actions: ["Apply learning", "Update thesis"],
       },
     },
   ];

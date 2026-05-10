@@ -88,27 +88,6 @@ export function BaseNode({ id, data, type }: NodeProps<Node<BaseNodeData>>) {
               ))}
             </div>
           )}
-          {data.actions && data.actions.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {data.actions.map((action) => (
-                <button
-                  key={action}
-                  type="button"
-                  className="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-[10px] text-neutral-100"
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={() => {
-                    window.dispatchEvent(
-                      new CustomEvent("company-brain-action", {
-                        detail: { action, nodeId: id, node: data.label },
-                      }),
-                    );
-                  }}
-                >
-                  {action}
-                </button>
-              ))}
-            </div>
-          )}
           <div
             className="mt-3 border-t border-neutral-800 pt-3"
             onPointerDown={(event) => event.stopPropagation()}

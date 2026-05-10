@@ -9,64 +9,11 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 
-type CompanyBrainAction = {
-  action: string;
-  nodeId: string;
-  node: string;
-};
-
 type CompanyBrainMessage = {
   message: string;
   nodeId: string;
   node: string;
 };
-
-function mockedActionResult(action: string) {
-  const normalized = action.toLowerCase();
-
-  if (normalized.includes("apply")) {
-    return {
-      status: "Mock applied",
-      content:
-        "Mock action applied. The wiki learning, affected component state, and downstream canvas refresh are simulated for the demo.",
-      metric: "Applied",
-    };
-  }
-
-  if (normalized.includes("draft") || normalized.includes("generate")) {
-    return {
-      status: "Mock draft ready",
-      content:
-        "Mock draft generated using the founder voice rules and current wiki context. No email was sent.",
-      metric: "Draft ready",
-    };
-  }
-
-  if (normalized.includes("create") || normalized.includes("enrich")) {
-    return {
-      status: "Mock enrichment complete",
-      content:
-        "Mock enrichment produced selected targets, signal scores, and suggested campaign angles.",
-      metric: "Mock data",
-    };
-  }
-
-  if (normalized.includes("prep") || normalized.includes("view") || normalized.includes("open")) {
-    return {
-      status: "Mock brief opened",
-      content:
-        "Mock detail view created from the relevant wiki pages and source records.",
-      metric: "Opened",
-    };
-  }
-
-  return {
-    status: "Mock action complete",
-    content:
-      "Mock interaction completed. This updates local demo state only until the real tool is implemented.",
-    metric: "Done",
-  };
-}
 
 export function useCanvasMCP(sseUrl: string) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -185,118 +132,29 @@ export function useCanvasMCP(sseUrl: string) {
     [persistCanvasState],
   );
 
-  const applyMockAction = useCallback(
-    async ({ action, nodeId, node }: CompanyBrainAction) => {
-      const result = mockedActionResult(action);
-      const sourceNode = nodesRef.current.find((n) => n.id === nodeId);
-      const noteId = `mock-${crypto.randomUUID().slice(0, 8)}`;
-      const notePosition = sourceNode
-        ? { x: sourceNode.position.x + 390, y: sourceNode.position.y + 40 }
-        : { x: 120, y: 120 };
+  const applyComponentMessage = useCallback(
+    async ({ message, nodeId }: CompanyBrainMessage) => {
+      const nextNodes: Node[] = nodesRef.current.map((n) =>
+        n.id === nodeId
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                status: "Message entered",
+                metric: "Local preview",
+                content: `Latest component message: "${message}". In Cursor/Claude MCP, this same field sends the message to chat from this component context.`,
+                badges: Array.from(
+                  new Set([
+                    ...(((n.data as { badges?: string[] }).badges) ?? []),
+                    "component message",
+                  ]),
+                ),
+              },
+            }
+          : n,
+      );
 
-      const nextNodes: Node[] = [
-        ...nodesRef.current.map((n) =>
-          n.id === nodeId
-            ? {
-                ...n,
-                data: {
-                  ...n.data,
-                  status: result.status,
-                  metric: result.metric,
-                  content: result.content,
-                  badges: Array.from(
-                    new Set([
-                      ...(((n.data as { badges?: string[] }).badges) ?? []),
-                      "mock-clicked",
-                    ]),
-                  ),
-                },
-              }
-            : n,
-        ),
-        {
-          id: noteId,
-          type: "note",
-          position: notePosition,
-          data: {
-            label: `Mock action: ${action}`,
-            metric: "Simulated",
-            status: "No external side effect",
-            content: `Clicked from ${node}. This is a local demo action; it did not call Clay, send email, write files, or update a real wiki.`,
-            badges: ["demo only"],
-          },
-        },
-      ];
-
-      const nextEdges: Edge[] = [
-        ...edgesRef.current,
-        {
-          id: `edge-${noteId}`,
-          source: nodeId,
-          target: noteId,
-          label: "mock action",
-          animated: true,
-        },
-      ];
-
-      await persistCanvasState(nextNodes, nextEdges);
-    },
-    [persistCanvasState],
-  );
-
-  const applyMockMessage = useCallback(
-    async ({ message, nodeId, node }: CompanyBrainMessage) => {
-      const sourceNode = nodesRef.current.find((n) => n.id === nodeId);
-      const noteId = `reply-${crypto.randomUUID().slice(0, 8)}`;
-      const notePosition = sourceNode
-        ? { x: sourceNode.position.x + 390, y: sourceNode.position.y + 120 }
-        : { x: 120, y: 180 };
-
-      const nextNodes: Node[] = [
-        ...nodesRef.current.map((n) =>
-          n.id === nodeId
-            ? {
-                ...n,
-                data: {
-                  ...n.data,
-                  status: "Mock message sent",
-                  metric: "Local preview",
-                  badges: Array.from(
-                    new Set([
-                      ...(((n.data as { badges?: string[] }).badges) ?? []),
-                      "message-sent",
-                    ]),
-                  ),
-                },
-              }
-            : n,
-        ),
-        {
-          id: noteId,
-          type: "note",
-          position: notePosition,
-          data: {
-            label: `Mock Cursor reply: ${node}`,
-            metric: "Preview only",
-            status: "Not sent to Cursor",
-            content: `You asked: "${message}". In Cursor/Claude MCP, this message box sends a real follow-up chat turn from the component. In this standalone web preview, it creates this mocked reply node instead.`,
-            badges: ["demo only", "component chat"],
-          },
-        },
-      ];
-
-      const nextEdges: Edge[] = [
-        ...edgesRef.current,
-        {
-          id: `edge-${noteId}`,
-          source: nodeId,
-          target: noteId,
-          label: "component message",
-          animated: true,
-        },
-      ];
-
-      await persistCanvasState(nextNodes, nextEdges);
+      await persistCanvasState(nextNodes, edgesRef.current);
     },
     [persistCanvasState],
   );
@@ -308,7 +166,6 @@ export function useCanvasMCP(sseUrl: string) {
     onEdgesChange,
     connected,
     persistNodeMove,
-    applyMockAction,
-    applyMockMessage,
+    applyComponentMessage,
   };
 }

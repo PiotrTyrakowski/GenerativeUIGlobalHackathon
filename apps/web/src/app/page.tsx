@@ -15,30 +15,9 @@ function CanvasApp() {
     onEdgesChange,
     connected,
     persistNodeMove,
-    applyMockAction,
-    applyMockMessage,
+    applyComponentMessage,
   } =
     useCanvasMCP(SSE_URL);
-
-  useEffect(() => {
-    const handleAction = (event: Event) => {
-      const detail = (event as CustomEvent).detail as {
-        action?: string;
-        nodeId?: string;
-        node?: string;
-      };
-      if (!detail?.action || !detail.nodeId || !detail.node) return;
-      applyMockAction({
-        action: detail.action,
-        nodeId: detail.nodeId,
-        node: detail.node,
-      });
-    };
-
-    window.addEventListener("company-brain-action", handleAction);
-    return () =>
-      window.removeEventListener("company-brain-action", handleAction);
-  }, [applyMockAction]);
 
   useEffect(() => {
     const handleMessage = (event: Event) => {
@@ -48,7 +27,7 @@ function CanvasApp() {
         node?: string;
       };
       if (!detail?.message || !detail.nodeId || !detail.node) return;
-      applyMockMessage({
+      applyComponentMessage({
         message: detail.message,
         nodeId: detail.nodeId,
         node: detail.node,
@@ -58,7 +37,7 @@ function CanvasApp() {
     window.addEventListener("company-brain-message", handleMessage);
     return () =>
       window.removeEventListener("company-brain-message", handleMessage);
-  }, [applyMockMessage]);
+  }, [applyComponentMessage]);
 
   return (
     <div className="h-screen relative">
@@ -80,8 +59,8 @@ function CanvasApp() {
           : "Waiting for MCP server..."}
         </div>
         <div className="mt-1 text-neutral-500">
-          Mocked: sample wiki, deal, campaign, and retro data. Real: MCP state,
-          SSE sync, and draggable canvas persistence.
+          Sample client data lives in local Company Brain files. Real: MCP
+          state, SSE sync, and draggable canvas persistence.
         </div>
       </div>
 
