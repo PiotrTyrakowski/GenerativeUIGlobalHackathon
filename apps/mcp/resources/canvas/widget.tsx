@@ -155,10 +155,24 @@ function BaseNode({
   data,
   type,
   onAction,
+  onSendMessage,
 }: NodeProps<Node<BaseNodeData>> & {
   onAction?: (payload: { action: string; nodeId: string; node: string }) => void;
+  onSendMessage?: (payload: {
+    message: string;
+    nodeId: string;
+    node: string;
+  }) => void;
 }) {
   const accent = ACCENTS[type || "generic"] || ACCENTS.generic;
+  const [message, setMessage] = useState("");
+
+  const sendMessage = () => {
+    const text = message.trim();
+    if (!text) return;
+    setMessage("");
+    onSendMessage?.({ message: text, nodeId: id, node: data.label });
+  };
 
   return (
     <>
@@ -265,6 +279,7 @@ function BaseNode({
                   onClick={() =>
                     onAction?.({ action, nodeId: id, node: data.label })
                   }
+                  onPointerDown={(event) => event.stopPropagation()}
                   style={{
                     background: "#262626",
                     border: "1px solid #404040",
@@ -279,6 +294,62 @@ function BaseNode({
               ))}
             </div>
           )}
+          <div
+            onPointerDown={(event) => event.stopPropagation()}
+            style={{
+              marginTop: 12,
+              paddingTop: 10,
+              borderTop: "1px solid #262626",
+            }}
+          >
+            <div
+              style={{
+                marginBottom: 6,
+                color: "#737373",
+                fontSize: 10,
+                textTransform: "uppercase",
+                letterSpacing: 0,
+              }}
+            >
+              Message from this component
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") sendMessage();
+                }}
+                placeholder="Ask Cursor..."
+                style={{
+                  minWidth: 0,
+                  flex: 1,
+                  background: "#0a0a0a",
+                  border: "1px solid #404040",
+                  borderRadius: 6,
+                  color: "#f5f5f5",
+                  fontSize: 11,
+                  padding: "7px 8px",
+                  outline: "none",
+                }}
+              />
+              <button
+                type="button"
+                onClick={sendMessage}
+                disabled={!message.trim()}
+                style={{
+                  background: message.trim() ? "#262626" : "#171717",
+                  border: "1px solid #404040",
+                  borderRadius: 6,
+                  color: message.trim() ? "#f5f5f5" : "#737373",
+                  fontSize: 11,
+                  padding: "7px 9px",
+                }}
+              >
+                Send
+              </button>
+            </div>
+          </div>
           {data.source && (
             <div style={{ marginTop: 10, color: "#737373", fontSize: 10 }}>
               Source: {data.source}
@@ -314,6 +385,7 @@ function CanvasInner({
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const moveTool = useCallTool("move_node");
+  const { sendFollowUpMessage, setState } = useWidget<CanvasWidgetProps>();
 
   const onAction = useCallback(
     ({
@@ -379,10 +451,57 @@ function CanvasInner({
     [nodes],
   );
 
+  const onSendMessage = useCallback(
+    async ({
+      message,
+      nodeId,
+      node,
+    }: {
+      message: string;
+      nodeId: string;
+      node: string;
+    }) => {
+      setNodes((currentNodes) =>
+        currentNodes.map((currentNode) =>
+          currentNode.id === nodeId
+            ? {
+                ...currentNode,
+                data: {
+                  ...currentNode.data,
+                  status: "Sent to chat",
+                  metric: "Awaiting answer",
+                  badges: Array.from(
+                    new Set([
+                      ...(((currentNode.data as BaseNodeData).badges) ?? []),
+                      "message-sent",
+                    ]),
+                  ),
+                },
+              }
+            : currentNode,
+        ),
+      );
+
+      await setState({
+        activeComponent: node,
+        activeComponentId: nodeId,
+        lastComponentMessage: message,
+      });
+      await sendFollowUpMessage(
+        `From Company Brain component "${node}" (${nodeId}): ${message}\n\nAnswer in chat using this component as the active context. If the canvas should change, call the existing canvas tools and then render the updated canvas.`,
+      );
+    },
+    [sendFollowUpMessage, setState],
+  );
+
   const nodeTypes = useMemo(
     () => {
       const ActionNode = (props: NodeProps<Node<BaseNodeData>>) => (
-        <BaseNode {...props} onAction={onAction} />
+        <BaseNode
+          {...props}
+          onAction={onAction}
+          onSendMessage={onSendMessage}
+        />
       );
       return {
         generic: ActionNode,
@@ -398,7 +517,7 @@ function CanvasInner({
         retro: ActionNode,
       };
     },
-    [onAction],
+    [onAction, onSendMessage],
   );
 
   const onNodesChange: OnNodesChange = useCallback(

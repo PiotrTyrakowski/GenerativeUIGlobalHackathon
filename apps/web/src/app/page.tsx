@@ -16,6 +16,7 @@ function CanvasApp() {
     connected,
     persistNodeMove,
     applyMockAction,
+    applyMockMessage,
   } =
     useCanvasMCP(SSE_URL);
 
@@ -38,6 +39,26 @@ function CanvasApp() {
     return () =>
       window.removeEventListener("company-brain-action", handleAction);
   }, [applyMockAction]);
+
+  useEffect(() => {
+    const handleMessage = (event: Event) => {
+      const detail = (event as CustomEvent).detail as {
+        message?: string;
+        nodeId?: string;
+        node?: string;
+      };
+      if (!detail?.message || !detail.nodeId || !detail.node) return;
+      applyMockMessage({
+        message: detail.message,
+        nodeId: detail.nodeId,
+        node: detail.node,
+      });
+    };
+
+    window.addEventListener("company-brain-message", handleMessage);
+    return () =>
+      window.removeEventListener("company-brain-message", handleMessage);
+  }, [applyMockMessage]);
 
   return (
     <div className="h-screen relative">

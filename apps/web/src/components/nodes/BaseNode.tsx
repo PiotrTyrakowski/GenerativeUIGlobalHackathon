@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 
 type BaseNodeData = {
@@ -26,6 +29,18 @@ const typeStyles: Record<string, { accent: string; border: string }> = {
 
 export function BaseNode({ id, data, type }: NodeProps<Node<BaseNodeData>>) {
   const style = typeStyles[type || "generic"] || typeStyles.generic;
+  const [message, setMessage] = useState("");
+
+  const sendMessage = () => {
+    const text = message.trim();
+    if (!text) return;
+    setMessage("");
+    window.dispatchEvent(
+      new CustomEvent("company-brain-message", {
+        detail: { message: text, nodeId: id, node: data.label },
+      }),
+    );
+  };
 
   return (
     <>
@@ -80,6 +95,7 @@ export function BaseNode({ id, data, type }: NodeProps<Node<BaseNodeData>>) {
                   key={action}
                   type="button"
                   className="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-[10px] text-neutral-100"
+                  onPointerDown={(event) => event.stopPropagation()}
                   onClick={() => {
                     window.dispatchEvent(
                       new CustomEvent("company-brain-action", {
@@ -93,6 +109,33 @@ export function BaseNode({ id, data, type }: NodeProps<Node<BaseNodeData>>) {
               ))}
             </div>
           )}
+          <div
+            className="mt-3 border-t border-neutral-800 pt-3"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <div className="mb-1.5 text-[10px] uppercase tracking-wide text-neutral-500">
+              Message from this component
+            </div>
+            <div className="flex gap-1.5">
+              <input
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") sendMessage();
+                }}
+                placeholder="Ask Cursor..."
+                className="min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-[11px] text-neutral-100 placeholder:text-neutral-600 outline-none focus:border-neutral-500"
+              />
+              <button
+                type="button"
+                onClick={sendMessage}
+                disabled={!message.trim()}
+                className="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-[11px] text-neutral-100 disabled:opacity-40"
+              >
+                Send
+              </button>
+            </div>
+          </div>
           {data.source && (
             <div className="mt-3 text-[10px] text-neutral-600">
               Source: {data.source}

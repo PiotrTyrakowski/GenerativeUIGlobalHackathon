@@ -38,29 +38,6 @@ const canvas: { nodes: CanvasNode[]; edges: CanvasEdge[] } = {
 const MOCKED_DATA_NOTICE =
   "Mocked for the hackathon demo: sample wiki pages, Aliaxis/Veoli/Marshall deal state, campaign metrics, and retro learnings. Real parts: MCP tools, server-owned canvas state, SSE web sync, draggable canvas, and Cursor-callable dashboard generation.";
 
-const componentIds = [
-  "knowledge-brief",
-  "ingestion",
-  "engagement-map",
-  "hypothesis",
-  "prospect-map",
-  "campaign-builder",
-  "retro",
-] as const;
-
-type ComponentId = (typeof componentIds)[number];
-
-function pickComponentId(input?: string): ComponentId {
-  const lower = input?.toLowerCase() ?? "";
-  if (lower.includes("ingest") || lower.includes("diff") || lower.includes("transcript")) return "ingestion";
-  if (lower.includes("engagement") || lower.includes("deal") || lower.includes("aliaxis")) return "engagement-map";
-  if (lower.includes("hypothesis") || lower.includes("thesis") || lower.includes("npi")) return "hypothesis";
-  if (lower.includes("prospect") || lower.includes("lookalike") || lower.includes("clay")) return "prospect-map";
-  if (lower.includes("campaign") || lower.includes("outreach") || lower.includes("email")) return "campaign-builder";
-  if (lower.includes("retro") || lower.includes("result") || lower.includes("learning")) return "retro";
-  return "knowledge-brief";
-}
-
 function createCompanyBrainCanvas(prompt?: string): {
   nodes: CanvasNode[];
   edges: CanvasEdge[];
@@ -225,24 +202,6 @@ function loadCompanyBrain(prompt?: string): string {
   canvas.edges = next.edges;
   broadcast();
   return `Company Brain canvas generated. ${MOCKED_DATA_NOTICE}`;
-}
-
-function loadFocusedComponent(componentId: ComponentId, prompt?: string): CanvasNode {
-  if (canvas.nodes.length === 0) {
-    const next = createCompanyBrainCanvas(prompt);
-    canvas.nodes = next.nodes;
-    canvas.edges = next.edges;
-  }
-
-  const node = canvas.nodes.find((item) => item.id === componentId);
-  if (!node) {
-    const next = createCompanyBrainCanvas(prompt);
-    canvas.nodes = next.nodes;
-    canvas.edges = next.edges;
-    return canvas.nodes.find((item) => item.id === componentId) ?? canvas.nodes[0];
-  }
-
-  return node;
 }
 
 // ---------------------------------------------------------------------------

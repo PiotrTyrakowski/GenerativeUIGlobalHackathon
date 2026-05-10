@@ -15,6 +15,12 @@ type CompanyBrainAction = {
   node: string;
 };
 
+type CompanyBrainMessage = {
+  message: string;
+  nodeId: string;
+  node: string;
+};
+
 function mockedActionResult(action: string) {
   const normalized = action.toLowerCase();
 
@@ -238,6 +244,63 @@ export function useCanvasMCP(sseUrl: string) {
     [persistCanvasState],
   );
 
+  const applyMockMessage = useCallback(
+    async ({ message, nodeId, node }: CompanyBrainMessage) => {
+      const sourceNode = nodesRef.current.find((n) => n.id === nodeId);
+      const noteId = `reply-${crypto.randomUUID().slice(0, 8)}`;
+      const notePosition = sourceNode
+        ? { x: sourceNode.position.x + 390, y: sourceNode.position.y + 120 }
+        : { x: 120, y: 180 };
+
+      const nextNodes: Node[] = [
+        ...nodesRef.current.map((n) =>
+          n.id === nodeId
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  status: "Mock message sent",
+                  metric: "Local preview",
+                  badges: Array.from(
+                    new Set([
+                      ...(((n.data as { badges?: string[] }).badges) ?? []),
+                      "message-sent",
+                    ]),
+                  ),
+                },
+              }
+            : n,
+        ),
+        {
+          id: noteId,
+          type: "note",
+          position: notePosition,
+          data: {
+            label: `Mock Cursor reply: ${node}`,
+            metric: "Preview only",
+            status: "Not sent to Cursor",
+            content: `You asked: "${message}". In Cursor/Claude MCP, this message box sends a real follow-up chat turn from the component. In this standalone web preview, it creates this mocked reply node instead.`,
+            badges: ["demo only", "component chat"],
+          },
+        },
+      ];
+
+      const nextEdges: Edge[] = [
+        ...edgesRef.current,
+        {
+          id: `edge-${noteId}`,
+          source: nodeId,
+          target: noteId,
+          label: "component message",
+          animated: true,
+        },
+      ];
+
+      await persistCanvasState(nextNodes, nextEdges);
+    },
+    [persistCanvasState],
+  );
+
   return {
     nodes,
     edges,
@@ -246,5 +309,6 @@ export function useCanvasMCP(sseUrl: string) {
     connected,
     persistNodeMove,
     applyMockAction,
+    applyMockMessage,
   };
 }
