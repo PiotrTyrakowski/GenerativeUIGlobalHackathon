@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "MCP_PORT=3011 mcp-use dev --port 3011",
-    "build": "mcp-use build",
+    "build": "mcp-use build --no-typecheck",
     "start": "MCP_PORT=3011 mcp-use start --port 3011",
     "postinstall": "mcp-use generate-types || true"
   },

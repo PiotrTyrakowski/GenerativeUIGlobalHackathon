@@ -11,7 +11,15 @@ interface CanvasNode {
   id: string;
   type: string;
   position: { x: number; y: number };
-  data: { label: string; content?: string };
+  data: {
+    label: string;
+    content?: string;
+    status?: string;
+    metric?: string;
+    source?: string;
+    badges?: string[];
+    actions?: string[];
+  };
   style?: Record<string, unknown>;
 }
 
@@ -26,6 +34,216 @@ const canvas: { nodes: CanvasNode[]; edges: CanvasEdge[] } = {
   nodes: [],
   edges: [],
 };
+
+const MOCKED_DATA_NOTICE =
+  "Mocked for the hackathon demo: sample wiki pages, Aliaxis/Veoli/Marshall deal state, campaign metrics, and retro learnings. Real parts: MCP tools, server-owned canvas state, SSE web sync, draggable canvas, and Cursor-callable dashboard generation.";
+
+const componentIds = [
+  "knowledge-brief",
+  "ingestion",
+  "engagement-map",
+  "hypothesis",
+  "prospect-map",
+  "campaign-builder",
+  "retro",
+] as const;
+
+type ComponentId = (typeof componentIds)[number];
+
+function pickComponentId(input?: string): ComponentId {
+  const lower = input?.toLowerCase() ?? "";
+  if (lower.includes("ingest") || lower.includes("diff") || lower.includes("transcript")) return "ingestion";
+  if (lower.includes("engagement") || lower.includes("deal") || lower.includes("aliaxis")) return "engagement-map";
+  if (lower.includes("hypothesis") || lower.includes("thesis") || lower.includes("npi")) return "hypothesis";
+  if (lower.includes("prospect") || lower.includes("lookalike") || lower.includes("clay")) return "prospect-map";
+  if (lower.includes("campaign") || lower.includes("outreach") || lower.includes("email")) return "campaign-builder";
+  if (lower.includes("retro") || lower.includes("result") || lower.includes("learning")) return "retro";
+  return "knowledge-brief";
+}
+
+function createCompanyBrainCanvas(prompt?: string): {
+  nodes: CanvasNode[];
+  edges: CanvasEdge[];
+} {
+  const lower = prompt?.toLowerCase() ?? "";
+  const showIngest =
+    lower.includes("ingest") ||
+    lower.includes("transcript") ||
+    lower.includes("exception") ||
+    lower.includes("add this");
+  const showCampaign =
+    lower.includes("campaign") ||
+    lower.includes("outreach") ||
+    lower.includes("prospect") ||
+    lower.includes("npi");
+  const showPolicy =
+    lower.includes("refund") ||
+    lower.includes("policy") ||
+    lower.includes("brief");
+
+  const nodes: CanvasNode[] = [
+    {
+      id: "wiki-substrate",
+      type: "wiki",
+      position: { x: 20, y: 260 },
+      data: {
+        label: "Karpathy Wiki",
+        metric: "raw -> wiki -> schema",
+        status: "Server-owned state",
+        content:
+          "Git-backed memory layer. The LLM writes wiki pages from immutable raw sources; components read the compiled state.",
+        source: "CLAUDE.md, index.md, log.md",
+        badges: ["real: state model", "mock: sample pages"],
+      },
+    },
+    {
+      id: "knowledge-brief",
+      type: "brief",
+      position: { x: 410, y: 40 },
+      data: {
+        label: showPolicy ? "Knowledge Brief: Refund Policy" : "Knowledge Brief",
+        metric: showPolicy ? "3 exceptions found" : "7 sources loaded",
+        status: "Search result card",
+        content: showPolicy
+          ? "Standard refund window is 30 days. ACME has a negotiated 45-day exception. Enterprise custom work requires approval."
+          : "Ask Cursor a question and this node becomes the structured answer instead of a text wall.",
+        source: "wiki/entities + wiki/decisions",
+        badges: ["search_knowledge"],
+        actions: ["Ask follow-up", "Open source", "Create task"],
+      },
+    },
+    {
+      id: "ingestion",
+      type: "ingest",
+      position: { x: 410, y: 360 },
+      data: {
+        label: showIngest ? "Ingestion Diff: New Input" : "Ingestion Form + Diff",
+        metric: showIngest ? "+5 wiki updates" : "Paste -> diff",
+        status: showIngest ? "Ready to apply" : "Idle",
+        content: showIngest
+          ? "New raw input would update entity, decision, pipeline, index, and log pages. This demo shows the diff path with mocked files."
+          : "Paste transcript, email, policy exception, or research. The server stores raw input and returns a wiki update diff.",
+        source: "raw/transcripts, raw/emails",
+        badges: ["ingest_knowledge"],
+        actions: ["Apply diff", "Reject", "Show affected pages"],
+      },
+    },
+    {
+      id: "engagement-map",
+      type: "engagement",
+      position: { x: 800, y: -80 },
+      data: {
+        label: "Engagement Map: Aliaxis",
+        metric: "€20K pilot",
+        status: "Proposal, 8 days stale",
+        content:
+          "Szymon champions. Filip owns supply chain. Sylvain confirmed impairment rules: 70% at 24mo, 100% at 12mo.",
+        source: "4 mocked transcripts",
+        badges: ["stakeholders: 5", "warning"],
+        actions: ["Draft nudge", "Prep next call", "View timeline"],
+      },
+    },
+    {
+      id: "hypothesis",
+      type: "hypothesis",
+      position: { x: 1180, y: 80 },
+      data: {
+        label: "Hypothesis Card: NPI Thesis",
+        metric: "80% confidence",
+        status: "High",
+        content:
+          "NPI is a structural signal problem in industrial manufacturing, not a one-off cleanup project.",
+        source: "wiki/concepts/npi-thesis.md",
+        badges: ["pipes: very high", "cosmetics: low"],
+        actions: ["Find similar companies", "Test via outreach", "Write content"],
+      },
+    },
+    {
+      id: "prospect-map",
+      type: "prospect",
+      position: { x: 1580, y: -80 },
+      data: {
+        label: "Prospect Map",
+        metric: showCampaign ? "26 lookalikes" : "8 strong SAP targets",
+        status: "Clay enrichment mocked",
+        content:
+          "Aalberts, Wavin, Genuit, and Polypipe ranked by NPI signal strength, ERP fit, and outreach angle.",
+        source: "mock Clay + wiki research",
+        badges: ["SAP", "industrial", "signal score"],
+        actions: ["Create campaign", "Enrich selected"],
+      },
+    },
+    {
+      id: "campaign-builder",
+      type: "campaign",
+      position: { x: 1580, y: 360 },
+      data: {
+        label: "Campaign Builder",
+        metric: showCampaign ? "38 approved / 6 rejected" : "Fragments, not full emails",
+        status: "Voice checks active",
+        content:
+          "Generates hook, pain, and CTA fragments. Flags banned phrases like 'I imagine' against the founder voice page.",
+        source: "wiki/entities/artur-wala.md",
+        badges: ["voice: 94%", "banned phrases"],
+        actions: ["Approve all", "Regenerate rejects", "Export"],
+      },
+    },
+    {
+      id: "retro",
+      type: "retro",
+      position: { x: 1180, y: 600 },
+      data: {
+        label: "Retro Dashboard",
+        metric: "15.4% replies",
+        status: "Learning loop",
+        content:
+          "Early Warning angle wins. Pipes outperform cosmetics. Apply updates writes back to wiki and re-sorts the next campaign.",
+        source: "mock campaign results",
+        badges: ["3 meetings", "1 proposal"],
+        actions: ["Apply learning", "Update thesis"],
+      },
+    },
+  ];
+
+  const edges: CanvasEdge[] = [
+    { id: "edge-wiki-brief", source: "wiki-substrate", target: "knowledge-brief", label: "search" },
+    { id: "edge-wiki-ingest", source: "ingestion", target: "wiki-substrate", label: "writes raw + wiki diff" },
+    { id: "edge-wiki-engagement", source: "wiki-substrate", target: "engagement-map", label: "entities" },
+    { id: "edge-engagement-hypothesis", source: "engagement-map", target: "hypothesis", label: "evidence" },
+    { id: "edge-hypothesis-prospect", source: "hypothesis", target: "prospect-map", label: "criteria" },
+    { id: "edge-prospect-campaign", source: "prospect-map", target: "campaign-builder", label: "targets" },
+    { id: "edge-campaign-retro", source: "campaign-builder", target: "retro", label: "results" },
+    { id: "edge-retro-hypothesis", source: "retro", target: "hypothesis", label: "learnings" },
+  ];
+
+  return { nodes, edges };
+}
+
+function loadCompanyBrain(prompt?: string): string {
+  const next = createCompanyBrainCanvas(prompt);
+  canvas.nodes = next.nodes;
+  canvas.edges = next.edges;
+  broadcast();
+  return `Company Brain canvas generated. ${MOCKED_DATA_NOTICE}`;
+}
+
+function loadFocusedComponent(componentId: ComponentId, prompt?: string): CanvasNode {
+  if (canvas.nodes.length === 0) {
+    const next = createCompanyBrainCanvas(prompt);
+    canvas.nodes = next.nodes;
+    canvas.edges = next.edges;
+  }
+
+  const node = canvas.nodes.find((item) => item.id === componentId);
+  if (!node) {
+    const next = createCompanyBrainCanvas(prompt);
+    canvas.nodes = next.nodes;
+    canvas.edges = next.edges;
+    return canvas.nodes.find((item) => item.id === componentId) ?? canvas.nodes[0];
+  }
+
+  return node;
+}
 
 // ---------------------------------------------------------------------------
 // SSE broadcast (for standalone web app at apps/web)
@@ -99,15 +317,22 @@ const sseServer = createServer((req, res) => {
   res.end("Not found");
 });
 
-sseServer.on("error", (err: NodeJS.ErrnoException) => {
-  if (err.code === "EADDRINUSE") {
-    console.error(`SSE port ${SSE_PORT} in use, trying ${SSE_PORT + 1}`);
-    sseServer.listen(SSE_PORT + 1);
-  }
-});
-sseServer.listen(SSE_PORT, () => {
-  console.error(`Canvas SSE → http://localhost:${SSE_PORT}/events`);
-});
+const isMcpUseBuild = process.argv.some((arg) => arg.includes("build"));
+
+if (!isMcpUseBuild) {
+  sseServer.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(
+        `Canvas SSE port ${SSE_PORT} is already in use. Set CANVAS_SSE_PORT to run another local canvas stream.`,
+      );
+      return;
+    }
+    console.error(err);
+  });
+  sseServer.listen(SSE_PORT, () => {
+    console.error(`Canvas SSE → http://localhost:${SSE_PORT}/events`);
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Canvas tool helpers
@@ -218,9 +443,21 @@ server.tool(
         .optional()
         .describe("Canvas position {x, y}"),
       type: z
-        .enum(["generic", "note", "task"])
+        .enum([
+          "generic",
+          "note",
+          "task",
+          "wiki",
+          "brief",
+          "ingest",
+          "engagement",
+          "hypothesis",
+          "prospect",
+          "campaign",
+          "retro",
+        ])
         .optional()
-        .describe("Node style: generic (blue), note (amber), task (green)"),
+        .describe("Node style / component type"),
     }),
   },
   async (input) => {
@@ -301,6 +538,57 @@ server.tool(
 
 server.tool(
   {
+    name: "show_company_brain",
+    description:
+      "Generate and render the Company Brain GTM dashboard canvas. Use this for the hackathon demo or when the user asks to see the company brain.",
+    schema: z.object({
+      focus: z
+        .string()
+        .optional()
+        .describe("Optional user goal or question to bias the generated dashboard"),
+    }),
+    widget: {
+      name: "canvas",
+      invoking: "Generating Company Brain canvas…",
+      invoked: "Company Brain ready",
+    },
+  },
+  async ({ focus }) => {
+    const message = loadCompanyBrain(focus);
+    return widget({
+      props: { nodes: canvas.nodes, edges: canvas.edges },
+      output: text(message),
+    });
+  },
+);
+
+server.tool(
+  {
+    name: "company_brain_chat",
+    description:
+      "Cursor/Claude chat entrypoint for Company Brain. Call this after each user message that should affect or regenerate the dashboard. It updates the canvas from the message and returns the interactive widget.",
+    schema: z.object({
+      message: z.string().describe("The user's latest chat message"),
+    }),
+    widget: {
+      name: "canvas",
+      invoking: "Updating Company Brain from message…",
+      invoked: "Company Brain updated",
+    },
+  },
+  async ({ message }) => {
+    const summary = loadCompanyBrain(message);
+    return widget({
+      props: { nodes: canvas.nodes, edges: canvas.edges },
+      output: text(
+        `${summary}\n\nInterpreted latest message: "${message}". The canvas is regenerated after this chat turn with relevant nodes emphasized through content/status changes.`,
+      ),
+    });
+  },
+);
+
+server.tool(
+  {
     name: "get_canvas_state",
     description:
       "Return the current canvas state as JSON (all node IDs, positions, edges).",
@@ -324,12 +612,13 @@ server.tool(
     },
   },
   async () => {
+    if (canvas.nodes.length === 0) {
+      loadCompanyBrain();
+    }
     return widget({
       props: { nodes: canvas.nodes, edges: canvas.edges },
       output: text(
-        canvas.nodes.length === 0
-          ? "Canvas is empty."
-          : `Canvas: ${canvas.nodes.length} nodes, ${canvas.edges.length} edges.`,
+        `Canvas: ${canvas.nodes.length} nodes, ${canvas.edges.length} edges. ${MOCKED_DATA_NOTICE}`,
       ),
     });
   },

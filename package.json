@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": ["apps/*"],
   "scripts": {
-    "kill": "fuser -k 3000/tcp 3002/tcp 3011/tcp 2>/dev/null; sleep 1; echo 'Ports 3000, 3002, 3011 cleared'",
+    "kill": "for port in 3000 3002 3011; do pids=$(lsof -ti tcp:$port 2>/dev/null); if [ -n \"$pids\" ]; then kill $pids 2>/dev/null || true; fi; done; sleep 1; echo 'Ports 3000, 3002, 3011 cleared'",
     "dev": "npm run kill && concurrently -k -n web,mcp -c blue,magenta \"npm run dev -w web\" \"npm run dev -w mcp\"",
     "dev:web": "npm run dev -w web",
     "dev:mcp": "npm run dev -w mcp",

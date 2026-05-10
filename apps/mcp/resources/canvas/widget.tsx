@@ -36,6 +36,11 @@ const nodeSchema = z.object({
   data: z.object({
     label: z.string(),
     content: z.string().optional(),
+    status: z.string().optional(),
+    metric: z.string().optional(),
+    source: z.string().optional(),
+    badges: z.array(z.string()).optional(),
+    actions: z.array(z.string()).optional(),
   }),
 });
 
@@ -78,11 +83,81 @@ const ACCENTS: Record<string, string> = {
   generic: "#3b82f6",
   note: "#f59e0b",
   task: "#10b981",
+  wiki: "#64748b",
+  brief: "#14b8a6",
+  ingest: "#f59e0b",
+  engagement: "#3b82f6",
+  hypothesis: "#8b5cf6",
+  prospect: "#22c55e",
+  campaign: "#ef4444",
+  retro: "#06b6d4",
 };
 
-type BaseNodeData = { label: string; content?: string };
+type BaseNodeData = {
+  label: string;
+  content?: string;
+  status?: string;
+  metric?: string;
+  source?: string;
+  badges?: string[];
+  actions?: string[];
+};
 
-function BaseNode({ data, type }: NodeProps<Node<BaseNodeData>>) {
+function mockedActionResult(action: string) {
+  const normalized = action.toLowerCase();
+
+  if (normalized.includes("apply")) {
+    return {
+      status: "Mock applied",
+      metric: "Applied",
+      content:
+        "Mock action applied. Wiki learning, affected component state, and downstream canvas refresh are simulated.",
+    };
+  }
+
+  if (normalized.includes("draft") || normalized.includes("generate")) {
+    return {
+      status: "Mock draft ready",
+      metric: "Draft ready",
+      content:
+        "Mock draft generated using founder voice rules and current wiki context. No message was sent.",
+    };
+  }
+
+  if (normalized.includes("create") || normalized.includes("enrich")) {
+    return {
+      status: "Mock enrichment complete",
+      metric: "Mock data",
+      content:
+        "Mock enrichment produced selected targets, signal scores, and suggested campaign angles.",
+    };
+  }
+
+  if (normalized.includes("prep") || normalized.includes("view") || normalized.includes("open")) {
+    return {
+      status: "Mock brief opened",
+      metric: "Opened",
+      content:
+        "Mock detail view created from the relevant wiki pages and source records.",
+    };
+  }
+
+  return {
+    status: "Mock action complete",
+    metric: "Done",
+    content:
+      "Mock interaction completed. This updates local demo state only until the real tool exists.",
+  };
+}
+
+function BaseNode({
+  id,
+  data,
+  type,
+  onAction,
+}: NodeProps<Node<BaseNodeData>> & {
+  onAction?: (payload: { action: string; nodeId: string; node: string }) => void;
+}) {
   const accent = ACCENTS[type || "generic"] || ACCENTS.generic;
 
   return (
@@ -101,9 +176,9 @@ function BaseNode({ data, type }: NodeProps<Node<BaseNodeData>>) {
         style={{
           background: "#171717",
           border: "1px solid #2e2e2e",
-          borderRadius: 12,
-          minWidth: 180,
-          maxWidth: 280,
+          borderRadius: 8,
+          minWidth: 260,
+          maxWidth: 340,
           overflow: "hidden",
           boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
         }}
@@ -113,23 +188,100 @@ function BaseNode({ data, type }: NodeProps<Node<BaseNodeData>>) {
           <div
             style={{
               fontWeight: 600,
-              fontSize: 13,
+              fontSize: 14,
               color: "#f5f5f5",
               lineHeight: 1.3,
             }}
           >
             {data.label}
           </div>
+          {(data.metric || data.status) && (
+            <div
+              style={{
+                marginTop: 8,
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              {data.metric && (
+                <span style={{ color: accent, fontSize: 16, fontWeight: 700 }}>
+                  {data.metric}
+                </span>
+              )}
+              {data.status && (
+                <span
+                  style={{
+                    color: "#d4d4d4",
+                    background: "#262626",
+                    border: "1px solid #3f3f46",
+                    borderRadius: 999,
+                    padding: "2px 8px",
+                    fontSize: 10,
+                  }}
+                >
+                  {data.status}
+                </span>
+              )}
+            </div>
+          )}
           {data.content && (
             <div
               style={{
-                marginTop: 4,
-                fontSize: 11,
-                color: "#a3a3a3",
+                marginTop: 8,
+                fontSize: 12,
+                color: "#d4d4d4",
                 lineHeight: 1.5,
               }}
             >
               {data.content}
+            </div>
+          )}
+          {data.badges && data.badges.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+              {data.badges.map((badge) => (
+                <span
+                  key={badge}
+                  style={{
+                    border: "1px solid #404040",
+                    borderRadius: 999,
+                    color: "#a3a3a3",
+                    fontSize: 10,
+                    padding: "2px 7px",
+                  }}
+                >
+                  {badge}
+                </span>
+              ))}
+            </div>
+          )}
+          {data.actions && data.actions.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+              {data.actions.map((action) => (
+                <button
+                  key={action}
+                  type="button"
+                  onClick={() =>
+                    onAction?.({ action, nodeId: id, node: data.label })
+                  }
+                  style={{
+                    background: "#262626",
+                    border: "1px solid #404040",
+                    borderRadius: 6,
+                    color: "#f5f5f5",
+                    fontSize: 10,
+                    padding: "4px 7px",
+                  }}
+                >
+                  {action}
+                </button>
+              ))}
+            </div>
+          )}
+          {data.source && (
+            <div style={{ marginTop: 10, color: "#737373", fontSize: 10 }}>
+              Source: {data.source}
             </div>
           )}
         </div>
@@ -162,11 +314,91 @@ function CanvasInner({
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const moveTool = useCallTool("move_node");
-  const { sendFollowUpMessage } = useWidget<CanvasWidgetProps>();
+
+  const onAction = useCallback(
+    ({
+      action,
+      nodeId,
+      node,
+    }: {
+      action: string;
+      nodeId: string;
+      node: string;
+    }) => {
+      const result = mockedActionResult(action);
+      const sourceNode = nodes.find((n) => n.id === nodeId);
+      const noteId = `mock-${Math.random().toString(16).slice(2, 10)}`;
+      const notePosition = sourceNode
+        ? { x: sourceNode.position.x + 390, y: sourceNode.position.y + 40 }
+        : { x: 120, y: 120 };
+
+      setNodes((currentNodes) => [
+        ...currentNodes.map((currentNode) =>
+          currentNode.id === nodeId
+            ? {
+                ...currentNode,
+                data: {
+                  ...currentNode.data,
+                  status: result.status,
+                  metric: result.metric,
+                  content: result.content,
+                  badges: Array.from(
+                    new Set([
+                      ...(((currentNode.data as BaseNodeData).badges) ?? []),
+                      "mock-clicked",
+                    ]),
+                  ),
+                },
+              }
+            : currentNode,
+        ),
+        {
+          id: noteId,
+          type: "note",
+          position: notePosition,
+          data: {
+            label: `Mock action: ${action}`,
+            metric: "Simulated",
+            status: "No external side effect",
+            content: `Clicked from ${node}. This local widget action did not call Clay, send email, write files, or update a real wiki.`,
+            badges: ["demo only"],
+          },
+        },
+      ]);
+      setEdges((currentEdges) => [
+        ...currentEdges,
+        {
+          id: `edge-${noteId}`,
+          source: nodeId,
+          target: noteId,
+          label: "mock action",
+          animated: true,
+        },
+      ]);
+    },
+    [nodes],
+  );
 
   const nodeTypes = useMemo(
-    () => ({ generic: BaseNode, note: BaseNode, task: BaseNode }),
-    [],
+    () => {
+      const ActionNode = (props: NodeProps<Node<BaseNodeData>>) => (
+        <BaseNode {...props} onAction={onAction} />
+      );
+      return {
+        generic: ActionNode,
+        note: ActionNode,
+        task: ActionNode,
+        wiki: ActionNode,
+        brief: ActionNode,
+        ingest: ActionNode,
+        engagement: ActionNode,
+        hypothesis: ActionNode,
+        prospect: ActionNode,
+        campaign: ActionNode,
+        retro: ActionNode,
+      };
+    },
+    [onAction],
   );
 
   const onNodesChange: OnNodesChange = useCallback(
@@ -181,13 +413,12 @@ function CanvasInner({
 
   const onNodeDragStop = useCallback(
     (_: React.MouseEvent, node: Node) => {
-      moveTool.callTool({ id: node.id, position: node.position });
-      const label = (node.data as BaseNodeData)?.label || node.id;
-      sendFollowUpMessage(
-        `User moved "${label}" to position (${Math.round(node.position.x)}, ${Math.round(node.position.y)}). Acknowledge briefly.`,
-      );
+      (moveTool.callTool as (args: {
+        id: string;
+        position: { x: number; y: number };
+      }) => void)({ id: node.id, position: node.position });
     },
-    [moveTool, sendFollowUpMessage],
+    [moveTool],
   );
 
   return (

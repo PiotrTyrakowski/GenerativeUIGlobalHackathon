@@ -9,6 +9,7 @@ import {
   type Edge,
   type OnNodesChange,
   type OnEdgesChange,
+  type OnNodeDrag,
   BackgroundVariant,
 } from "@xyflow/react";
 import { useMemo } from "react";
@@ -19,6 +20,7 @@ interface CanvasProps {
   edges: Edge[];
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
+  onNodeDragStop?: OnNodeDrag;
 }
 
 export function Canvas({
@@ -26,8 +28,24 @@ export function Canvas({
   edges,
   onNodesChange,
   onEdgesChange,
+  onNodeDragStop,
 }: CanvasProps) {
-  const nodeTypes = useMemo(() => ({ generic: BaseNode, note: BaseNode, task: BaseNode }), []);
+  const nodeTypes = useMemo(
+    () => ({
+      generic: BaseNode,
+      note: BaseNode,
+      task: BaseNode,
+      wiki: BaseNode,
+      brief: BaseNode,
+      ingest: BaseNode,
+      engagement: BaseNode,
+      hypothesis: BaseNode,
+      prospect: BaseNode,
+      campaign: BaseNode,
+      retro: BaseNode,
+    }),
+    [],
+  );
 
   return (
     <ReactFlow
@@ -35,6 +53,7 @@ export function Canvas({
       edges={edges}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
+      onNodeDragStop={onNodeDragStop}
       nodeTypes={nodeTypes}
       fitView
       colorMode="dark"
